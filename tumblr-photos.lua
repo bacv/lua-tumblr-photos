@@ -18,9 +18,11 @@ local function get_res_table(url)
 end
 
 local function write_file(data, name)
-	local imagefile = io.open(name, "w")
-	imagefile:write(data)
-	imagefile:close()
+	if data then
+		local imagefile = io.open(name, "w")
+		imagefile:write(data)
+		imagefile:close()
+	end
 end
 
 local function get_file_extension(url)
@@ -30,6 +32,11 @@ end
 local function mkdir(dir)
 	f = assert(io.popen('mkdir ' .. dir))
 	return f
+end
+
+function file_exists(name)
+   local f=io.open(name,"r")
+   if f~=nil then io.close(f) return true else return false end
 end
 
 mkdir(blog_name)
@@ -45,14 +52,16 @@ local loop_count = total_photo_posts / limit
 local progress = 0
 local prev_progress = 0
 for i=1, loop_count do
-	
 	local res = get_res_table(api_query .. '&limit=' .. limit ..
 		'&offset=' .. (i - 1) * limit)
 	for a, k in ipairs(res.response.posts) do
 		for j, l in ipairs(k.photos) do
 				local ext = get_file_extension(l.original_size.url)
-				local data = http.request(l.original_size.url)
-				write_file(data, blog_name .. '/' .. k.id .. j .. ext)
+				local file_name = blog_name .. '/' .. k.id .. j .. ext
+				if not file_exists(file_name) then
+					local data = http.request(l.original_size.url)
+					write_file(data, file_name)
+				end
 				progress = ((i - 1) * limit + a) / total_photo_posts * 100
 		end
 	end
